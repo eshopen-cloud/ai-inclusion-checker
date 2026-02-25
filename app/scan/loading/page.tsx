@@ -22,34 +22,10 @@ function LoadingContent() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [scanToken, setScanToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const startedRef = useRef(false);
 
-  useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
-
-    // Start the scan
-    const startScan = async () => {
-      try {
-        const res = await fetch("/api/scan/request", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ domain, scope, city, audience, session_id: crypto.randomUUID() }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Scan failed");
-        setScanToken(data.scan_token);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to start scan");
-      }
-    };
-
-    startScan();
-  }, [domain, scope, city, audience]);
-
-  // Step animation (independent of actual scan)
+  // Step animation (runs independently)
   useEffect(() => {
     const stepInterval = setInterval(() => {
       setCurrentStep((s) => Math.min(s + 1, STEPS.length - 1));
@@ -57,44 +33,58 @@ function LoadingContent() {
     return () => clearInterval(stepInterval);
   }, []);
 
-  // Progress bar animation
+  // Progress bar animation — stops at 90% until scan completes
   useEffect(() => {
     const progressInterval = setInterval(() => {
       setProgress((p) => {
-        if (p >= 90) return p; // Stop at 90%, wait for real completion
-        return p + 2;
+        if (p >= 90) return p;
+        return p + 1.5;
       });
-    }, 200);
+    }, 300);
     return () => clearInterval(progressInterval);
   }, []);
 
-  // Poll for completion
+  // Run scan — single request, waits for full result
   useEffect(() => {
-    if (!scanToken) return;
+    if (startedRef.current) return;
+    startedRef.current = true;
 
-    const pollInterval = setInterval(async () => {
+    const runScan = async () => {
       try {
-        const res = await fetch(`/api/scan/status?scan_token=${scanToken}`);
+        const res = await fetch("/api/scan/request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            domain,
+            scope,
+            city,
+            audience,
+            session_id: crypto.randomUUID(),
+          }),
+        });
+
         const data = await res.json();
 
-        if (data.status === "complete") {
-          clearInterval(pollInterval);
-          setProgress(100);
-          setCurrentStep(STEPS.length - 1);
-          setTimeout(() => {
-            router.push(`/scan/result?scan_token=${scanToken}`);
-          }, 600);
-        } else if (data.status === "failed") {
-          clearInterval(pollInterval);
-          setError(data.error || "Scan failed. Please try again.");
+        if (!res.ok) {
+          throw new Error(data.error || "Scan failed");
         }
-      } catch {
-        // ignore poll errors, keep trying
-      }
-    }, 1500);
 
-    return () => clearInterval(pollInterval);
-  }, [scanToken, router]);
+        // Store full result in sessionStorage so result page can read it
+        sessionStorage.setItem(`scan_result_${data.scan_token}`, JSON.stringify(data));
+
+        setProgress(100);
+        setCurrentStep(STEPS.length - 1);
+
+        setTimeout(() => {
+          router.push(`/scan/result?scan_token=${data.scan_token}`);
+        }, 600);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to complete scan");
+      }
+    };
+
+    runScan();
+  }, [domain, scope, city, audience, router]);
 
   if (error) {
     return (
@@ -195,7 +185,7 @@ function LoadingContent() {
 
         {/* Footer note */}
         <p className="mt-6 text-slate-500 text-xs text-center">
-          This may take a few seconds. AI-driven discovery is already influencing buying decisions.
+          This may take up to 30 seconds. AI-driven discovery is already influencing buying decisions.
         </p>
       </div>
 

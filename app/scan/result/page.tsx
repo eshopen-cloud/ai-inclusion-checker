@@ -75,20 +75,20 @@ function ResultContent() {
       return;
     }
 
-    const fetchResult = async () => {
-      try {
-        const res = await fetch(`/api/scan/result?scan_token=${scanToken}`);
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Could not load result");
-        setResult(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Error loading results");
-      } finally {
+    // Read result from sessionStorage (set by the loading page)
+    try {
+      const stored = sessionStorage.getItem(`scan_result_${scanToken}`);
+      if (stored) {
+        setResult(JSON.parse(stored));
         setLoading(false);
+        return;
       }
-    };
+    } catch {
+      // sessionStorage unavailable — fall through to error
+    }
 
-    fetchResult();
+    setError("Result not found. Please run a new scan.");
+    setLoading(false);
   }, [scanToken]);
 
   if (loading) {

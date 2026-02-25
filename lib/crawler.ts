@@ -5,9 +5,9 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 
-const CANDIDATE_PATHS = ["/about", "/services", "/pricing", "/faq", "/contact", "/about-us", "/our-services"];
-const FETCH_TIMEOUT_MS = 8000;
-const MAX_PAGES = 5;
+const CANDIDATE_PATHS = ["/about", "/services", "/faq", "/contact", "/about-us"];
+const FETCH_TIMEOUT_MS = 5000;
+const MAX_PAGES = 3;
 
 export interface FetchedPage {
   url: string;
@@ -69,7 +69,7 @@ async function fetchPage(url: string): Promise<FetchedPage> {
 async function checkRobots(baseUrl: string): Promise<boolean> {
   try {
     const res = await axios.get(`${baseUrl}/robots.txt`, {
-      timeout: 4000,
+      timeout: 3000,
       validateStatus: () => true,
     });
     if (res.status === 200 && typeof res.data === "string") {

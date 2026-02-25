@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { initializeScanRecord, runScan } from "@/lib/scanOrchestrator";
+import { runScanSync } from "@/lib/scanOrchestrator";
 import { ScanRequest } from "@/lib/types";
+
+// Allow up to 60s on Vercel Pro; hobby tier caps at 10s
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,20 +32,13 @@ export async function POST(req: NextRequest) {
       session_id: session_id || randomUUID(),
     };
 
-    // Initialize record synchronously
-    initializeScanRecord(scanToken, requestId, scanReq);
+    const result = await runScanSync(requestId, scanToken, scanReq);
 
-    // Run scan asynchronously (fire and forget)
-    runScan(scanToken, requestId, scanReq).catch((err) => {
-      console.error("[API] scan error:", err);
-    });
+    if (result.status === "failed") {
+      return NextResponse.json({ error: result.error }, { status: 422 });
+    }
 
-    return NextResponse.json({
-      request_id: requestId,
-      scan_token: scanToken,
-      status: "queued",
-      estimated_time_seconds: 12,
-    });
+    return NextResponse.json(result);
   } catch (err) {
     console.error("[API] /scan/request error:", err);
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
