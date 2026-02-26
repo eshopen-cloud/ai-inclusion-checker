@@ -34,6 +34,7 @@ const steps = [
 export default function LandingPage() {
   const [domain, setDomain] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -44,77 +45,82 @@ export default function LandingPage() {
       return;
     }
     setError("");
+    setLoading(true);
     router.push(`/scan/personalize?domain=${encodeURIComponent(cleaned)}`);
   };
 
   return (
     <main
-      className="min-h-screen flex flex-col items-center px-4 pt-16 pb-20"
+      className="min-h-screen flex flex-col items-center px-4 pb-20"
       style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%)" }}
     >
-      {/* Brand */}
-      <div className="mb-10 text-center">
+      {/* Hero */}
+      <section className="w-full max-w-[720px] flex flex-col items-center pt-10 sm:pt-16">
+
+        {/* 1. Logo */}
         <span className="text-blue-400 font-semibold text-sm tracking-widest uppercase">
           AI Inclusion Checker
         </span>
-      </div>
 
-      {/* Hero */}
-      <div className="max-w-2xl w-full text-center mb-10">
-        <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-5">
-          Right now, your ideal customer is asking AI about businesses like yours.{" "}
-          <span className="text-blue-400">Are you part of the answer?</span>
-        </h1>
-        <p className="text-slate-300 text-lg">
-          Run a free AI inclusion scan in under 60 seconds.
-        </p>
-      </div>
-
-      {/* Input Card */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white rounded-2xl p-8 w-full max-w-md"
-        style={{ boxShadow: "0 4px 24px rgba(0,0,0,0.18)" }}
-      >
-        <label htmlFor="domain" className="block text-slate-700 font-medium mb-2 text-sm">
-          Enter your website
-        </label>
-        <input
-          id="domain"
-          type="text"
-          value={domain}
-          onChange={(e) => setDomain(e.target.value)}
-          placeholder="example.com"
-          className="w-full border border-slate-200 rounded-lg px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base mb-4"
-          autoFocus
-        />
-        {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
-        <button
-          type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors text-base cursor-pointer"
+        {/* 2. Headline — 80px below logo */}
+        <h1
+          className="text-[36px] sm:text-5xl font-extrabold text-white text-center"
+          style={{ marginTop: "80px", lineHeight: 1.1 }}
         >
-          Run Scan →
-        </button>
-      </form>
+          Does your business appear in AI answers when customers search?
+        </h1>
 
-      {/* Trust line */}
-      <p className="mt-6 text-slate-400 text-sm text-center">
-        AI systems now influence real buying decisions.
-      </p>
+        {/* 3. Subheadline — 16px below headline */}
+        <p
+          className="text-base sm:text-lg text-slate-300 text-center"
+          style={{ marginTop: "16px", opacity: 0.75 }}
+        >
+          Run a free scan and see if your site appears in AI answers.
+        </p>
 
-      {/* Social proof */}
-      <div className="mt-8 flex gap-6 text-slate-500 text-xs">
-        <span>✓ Free scan</span>
-        <span>✓ No credit card</span>
-        <span>✓ Results in 60 sec</span>
-      </div>
+        {/* 4. Checker — 28px below subheadline */}
+        <form onSubmit={handleSubmit} className="w-full" style={{ marginTop: "28px" }}>
+          <div className="flex flex-col sm:flex-row gap-[10px] sm:gap-3 w-full">
+            <input
+              type="text"
+              value={domain}
+              onChange={(e) => { setDomain(e.target.value); setError(""); }}
+              placeholder="example.com"
+              className="flex-1 px-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-xl text-base"
+              style={{
+                height: "54px",
+                background: "rgba(255,255,255,0.07)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                backdropFilter: "blur(4px)",
+              }}
+              autoFocus
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white font-semibold rounded-xl transition-all whitespace-nowrap px-6 cursor-pointer disabled:opacity-60"
+              style={{ height: "54px" }}
+            >
+              {loading ? "Scanning…" : "Run Free Scan"}
+            </button>
+          </div>
+          {error && <p className="text-red-400 text-sm mt-2">{error}</p>}
+        </form>
+
+        {/* 5. Trust line — 12px below checker */}
+        <p
+          className="text-[13px] text-center"
+          style={{ marginTop: "12px", color: "rgba(148,163,184,0.6)" }}
+        >
+          Free scan · No signup · Results in seconds
+        </p>
+      </section>
 
       {/* Divider */}
-      <div className="w-full max-w-md mt-20 border-t border-white/10" />
+      <div className="w-full max-w-[720px] mt-20 border-t border-white/10" />
 
       {/* How it works */}
       <section className="w-full max-w-md mt-14">
-        {/* Section header */}
         <div className="text-center mb-10">
           <h2 className="text-2xl font-bold text-white mb-3">How it works</h2>
           <p className="text-slate-300 text-sm leading-relaxed">
@@ -122,7 +128,6 @@ export default function LandingPage() {
           </p>
         </div>
 
-        {/* Steps */}
         <ol className="space-y-4">
           {steps.map((step) => (
             <li key={step.num}>
@@ -146,7 +151,6 @@ export default function LandingPage() {
           ))}
         </ol>
 
-        {/* Trust reinforcement */}
         <p className="mt-8 text-center text-slate-400 text-sm">
           No ongoing work required from your team. Full editorial control at all times.
         </p>
